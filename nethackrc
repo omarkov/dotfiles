@@ -1,0 +1,9 @@
+OPTIONS=color,fullscreen,number_pad
+OPTIONS=name:Oliver,pickup_types:$
+
+OPTIONS=menucolors
+MENUCOLOR=" blessed"=green
+MENUCOLOR=" holy"=green
+MENUCOLOR=" cursed"=red
+MENUCOLOR=" unholy"=red
+MENUCOLOR=" cursed .* (being worn)"=orange
