@@ -226,6 +226,10 @@
   :init
   (global-anzu-mode))
 
+(use-package beacon
+  :ensure t
+  :init
+  (beacon-mode))
 
 (use-package dash-at-point
   :ensure t
@@ -283,6 +287,8 @@
   :diminish aggressive-indent-mode
   :config
   (add-hook 'prog-mode-hook 'aggressive-indent-mode))
+
+
 
 ;;; org-mode
 
@@ -812,12 +818,6 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
      '("o" "org-outlook" entry (file "~/org/capture.org" "Tasks")
        "* TODO %?\n  %c\n  %i"))))
 
-(use-package org-bullets
-  :ensure t
-  :config
-  (setq org-ellipsis " …")
-  (setq org-bullets-bullet-list '("•")))
-
 
 ;;;
 ;;; Variables set by Emacs customization facility
@@ -828,6 +828,10 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("67e998c3c23fe24ed0fb92b9de75011b92f35d3e89344157ae0d544d50a63a72" "e91ca866d6cbb79786e314e0466f4f1b8892b72e77ed702e53bf7565e0dfd469" default)))
+ '(elfeed-feeds (quote ("http://planet.emacsen.org/atom.xml")))
  '(neo-auto-indent-point t)
  '(neo-hidden-regexp-list
    (quote
@@ -844,7 +848,7 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
  '(org-time-stamp-custom-formats (quote ("<%e %b, %Y>" . "<%e %b, %Y %H:%M>")))
  '(package-selected-packages
    (quote
-    (glsl-mode ace-jump-zap ace-window avy ace-jump-mode outshine dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ sr-speedbar page-break-lines fill-column-indicator helm-company hydra neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline sx zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent)))
+    (elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent)))
  '(safe-local-variable-values
    (quote
     ((Package . IMAGES)
@@ -858,6 +862,7 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
      (Package . DW)
      (Syntax . Common-lisp)
      (Package . CCL)))))
+
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -926,3 +931,4 @@ the current buffer."
 
 ;;; enable some disabled
 (put 'erase-buffer 'disabled nil)
+
