@@ -66,9 +66,6 @@
 (global-hl-line-mode 1)
 (winner-mode 1)
 
-(add-hook 'prog-mode-hook 'linum-mode)
-(setq linum-format "%4d ")
-
 
 ;;;
 ;;; Setup some global keybindings
@@ -116,28 +113,49 @@
 
 ;;; UI
 
-(use-package zenburn-theme
+(use-package doom-themes
   :ensure t
-  :config
-  (load-theme 'zenburn 'no-confirm))
-
-(use-package spaceline-config
-  :ensure spaceline
-  :config
-  (spaceline-helm-mode))
-
-(use-package powerline
-  :ensure t
-  :after spaceline-config
   :init
-  (setq powerline-default-separator 'wave)
+  (setq doom-themes-enable-bold t)
+  (setq doom-themes-enable-italic t)
+  (doom-themes-neotree-config)
   :config
-  (powerline-default-theme))
+  (load-theme 'doom-one 'no-confirm))
+
+(use-package solaire-mode
+  :ensure t
+  :init
+  (add-hook 'after-change-major-mode-hook #'turn-on-solaire-mode))
+
+(use-package nlinum
+  :ensure t
+  :init
+  (add-hook 'prog-mode-hook 'nlinum-mode)
+  (setq nlinum-format "%4d "))
+
+(use-package nlinum-hl
+  :ensure t)
+
+(use-package spaceline-all-the-icons
+  :ensure t
+  :init
+  (spaceline-all-the-icons-theme)
+  (spaceline-all-the-icons--setup-anzu)
+  (spaceline-all-the-icons--setup-neotree))
 
 (use-package neotree
   :ensure t
+  :init
+  (setq neo-auto-indent-point t)
+  (setq neo-hidden-regexp-list '("^\\." "\\.pyc$" "~$" "^#.*#$" "\\.elc$" "\\.fasl"))
+  (setq neo-theme 'nerd)
+  (setq neo-window-fixed-size nil)
+  (setq neo-window-width 30)
+  (setq neo-mode-line-type 'none)
   :bind
   (("C-c n" . neotree)))
+
+
 
 ;;; Global modes
 
@@ -621,10 +639,10 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
     (if (equal major-mode 'org-agenda-mode)
         (progn
           (org-with-point-at (bh/get-pom-from-agenda-restriction-or-point)
-                             (bh/narrow-to-org-project)
-                             (save-excursion
-                               (bh/find-project-task)
-                               (org-agenda-set-restriction-lock)))
+            (bh/narrow-to-org-project)
+            (save-excursion
+              (bh/find-project-task)
+              (org-agenda-set-restriction-lock)))
           (org-agenda-redo)
           (beginning-of-buffer))
       (bh/narrow-to-org-project)
@@ -641,7 +659,7 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
     (interactive)
     (if (equal major-mode 'org-agenda-mode)
         (org-with-point-at (bh/get-pom-from-agenda-restriction-or-point)
-                           (bh/narrow-up-one-org-level))
+          (bh/narrow-up-one-org-level))
       (bh/narrow-up-one-org-level)))
   :bind
   (("C-c c" . org-capture)
@@ -818,6 +836,11 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
      '("o" "org-outlook" entry (file "~/org/capture.org" "Tasks")
        "* TODO %?\n  %c\n  %i"))))
 
+(use-package org-brain
+  :ensure t
+  :bind
+  (("C-c v" . org-brain-visualize)))
+
 
 ;;;
 ;;; Variables set by Emacs customization facility
@@ -830,14 +853,15 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    (quote
-    ("67e998c3c23fe24ed0fb92b9de75011b92f35d3e89344157ae0d544d50a63a72" "e91ca866d6cbb79786e314e0466f4f1b8892b72e77ed702e53bf7565e0dfd469" default)))
+    ("19f68ed86c05e6810925c2985f873f7ad728079ade01f5844d7d61e82dcbae4a" "5310b88333fc64c0cb34a27f42fa55ce371438a55f02ac7a4b93519d148bd03d" "67e998c3c23fe24ed0fb92b9de75011b92f35d3e89344157ae0d544d50a63a72" "e91ca866d6cbb79786e314e0466f4f1b8892b72e77ed702e53bf7565e0dfd469" default)))
  '(elfeed-feeds (quote ("http://planet.emacsen.org/atom.xml")))
  '(neo-auto-indent-point t)
  '(neo-hidden-regexp-list
    (quote
     ("^\\." "\\.pyc$" "~$" "^#.*#$" "\\.elc$" "\\.fasl")))
  '(neo-theme (quote nerd))
- '(neo-window-fixed-size nil)
+ '(neo-window-fixed-size t)
+ '(neo-window-width 35)
  '(org-agenda-files (quote ("~/test.org")))
  '(org-blank-before-new-entry (quote ((heading . auto) (plain-list-item . auto))))
  '(org-fontify-whole-heading-line t)
@@ -848,7 +872,7 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
  '(org-time-stamp-custom-formats (quote ("<%e %b, %Y>" . "<%e %b, %Y %H:%M>")))
  '(package-selected-packages
    (quote
-    (elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent)))
+    (dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent)))
  '(safe-local-variable-values
    (quote
     ((Package . IMAGES)
@@ -861,22 +885,25 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
      (Base . 10)
      (Package . DW)
      (Syntax . Common-lisp)
-     (Package . CCL)))))
+     (Package . CCL))))
+ '(spaceline-all-the-icons-highlight-file-name t)
+ '(spaceline-all-the-icons-separator-type (quote none))
+ '(spaceline-all-the-icons-slim-render t))
 
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(fringe ((t (:background "#3F3F3F" :foreground "#DCDCCC"))))
- '(helm-source-header ((t (:background "#2B2B2B" :foreground "#F0DFAF" :box nil :underline nil :weight bold))))
- '(linum ((t (:background "#3F3F3F" :foreground "#7f7f7f" :height 0.8))))
- '(mode-line ((t (:background "#2B2B2B" :foreground "#8FB28F" :box nil))))
- '(mode-line-highlight ((t (:box nil))))
- '(mode-line-inactive ((t (:background "#383838" :foreground "#5F7F5F" :box nil))))
- '(neo-dir-link-face ((t (:inherit font-lock-function-name-face))))
- '(neo-file-link-face ((t nil)))
- '(org-block-background ((t (:background "#3A3A3A")))))
+;; (custom-set-faces
+;;  ;; custom-set-faces was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  '(fringe ((t (:background "#3F3F3F" :foreground "#DCDCCC"))))
+;;  '(helm-source-header ((t (:background "#2B2B2B" :foreground "#F0DFAF" :box nil :underline nil :weight bold))))
+;;  '(linum ((t (:background "#3F3F3F" :foreground "#7f7f7f" :height 0.8))))
+;;  '(mode-line ((t (:background "#2B2B2B" :foreground "#8FB28F" :box nil))))
+;;  '(mode-line-highlight ((t (:box nil))))
+;;  '(mode-line-inactive ((t (:background "#383838" :foreground "#5F7F5F" :box nil))))
+;;  '(neo-dir-link-face ((t (:inherit font-lock-function-name-face))))
+;;  '(neo-file-link-face ((t nil)))
+;;  '(org-block-background ((t (:background "#3A3A3A")))))
 
 
 ;;;
@@ -932,3 +959,13 @@ the current buffer."
 ;;; enable some disabled
 (put 'erase-buffer 'disabled nil)
 
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "#21242b" :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 140 :width normal :foundry "nil" :family "Menlo"))))
+ '(mode-line ((t (:background "#282c34" :box (:line-width 4 :color "#282c34")))))
+ '(mode-line-inactive ((t (:background "#1d2026" :foreground "#545668" :box (:line-width 4 :color "#1d2026")))))
+ '(solaire-mode-line-face ((t (:inherit mode-line :background "#1c1f25" :box (:line-width 4 :color "#1c1f25")))))
+ '(solaire-mode-line-inactive-face ((t (:inherit mode-line-inactive :background "#21242b" :box (:line-width 4 :color "#21242b"))))))
