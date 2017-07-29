@@ -127,14 +127,19 @@
   :init
   (add-hook 'after-change-major-mode-hook #'turn-on-solaire-mode))
 
-(use-package nlinum
-  :ensure t
-  :init
-  (add-hook 'prog-mode-hook 'nlinum-mode)
-  (setq nlinum-format "%4d "))
+(defun om/hide-fringe-in-minibuffer ()
+  (set-window-fringes (minibuffer-window) 0 0))
+(add-hook 'minibuffer-setup-hook #'om/hide-fringe-in-minibuffer)
+(om/hide-fringe-in-minibuffer)
 
-(use-package nlinum-hl
-  :ensure t)
+;; (use-package nlinum
+;;   :ensure t
+;;   :init
+;;   (add-hook 'prog-mode-hook 'nlinum-mode)
+;;   (setq nlinum-format "%4d "))
+
+;; (use-package nlinum-hl
+;;   :ensure t)
 
 (use-package spaceline-all-the-icons
   :ensure t
@@ -143,15 +148,19 @@
   (spaceline-all-the-icons--setup-anzu)
   (spaceline-all-the-icons--setup-neotree))
 
+(defun om/truncate-lines ()
+  (toggle-truncate-lines 1))
+
 (use-package neotree
   :ensure t
-  :init
+  :config
   (setq neo-auto-indent-point t)
   (setq neo-hidden-regexp-list '("^\\." "\\.pyc$" "~$" "^#.*#$" "\\.elc$" "\\.fasl"))
   (setq neo-theme 'nerd)
   (setq neo-window-fixed-size nil)
   (setq neo-window-width 30)
   (setq neo-mode-line-type 'none)
+  (add-hook 'neotree-mode-hook #'om/truncate-lines)
   :bind
   (("C-c n" . neotree)))
 
@@ -180,29 +189,75 @@
   :bind
   (("M-p" . ace-window)))
 
-(use-package helm
+(use-package flx
+  :ensure t)
+
+(use-package ivy
   :ensure t
-  :diminish helm-mode
-  :init 
-  (require 'helm-config)
-  (setq helm-split-window-in-side-p t)
-  (setq helm-display-header-line nil)
-  (setq helm-ff-skip-boring-files t)
-  (setq helm-boring-file-regexp-list
-	'("\\.git$" "\\.hg$" "\\.svn$" "\\.CVS$" "\\._darcs$" "\\.la$" "\\.o$" "~$"
-	  "\\.so$" "\\.a$" "\\.elc$" "\\.fas$" "\\.fasl$" "\\.pyc$" "\\.pyo$"
-          "\\.dx64fsl"))
-  (helm-mode)
+  :init
+  (require 'flx)
+  (setq ivy-wrap t)
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-initial-inputs-alist nil)
+  (setq ivy-height 15)
+  (setq ivy-re-builders-alist '((t . ivy--regex-fuzzy)))
+  :config
+  (ivy-mode 1)
   :bind
-  (("M-x" . helm-M-x)
-   ("M-y" . helm-show-kill-ring)
-   ("C-x b" . helm-mini)
-   ("C-x C-f" . helm-find-files)
-   ("M-o" . helm-occur)
-   :map helm-map
-   ("<tab>" . helm-execute-persistent-action)
-   ("C-i" . helm-execute-persistent-action)
-   ("C-z" . helm-select-action)))
+  (("C-c C-r" . ivy-resume)))
+
+(use-package counsel
+  :ensure t
+  :init
+  (setq confirm-nonexistent-file-or-buffer t)
+  (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)")
+  :bind
+  (("M-x" . counsel-M-x)
+   ("C-x C-f" . counsel-find-file)))
+
+(use-package dired-collapse
+  :ensure t
+  :config
+  (add-hook 'dired-mode-hook #'dired-collapse-mode)
+  (add-hook 'dired-mode-hook #'om/truncate-lines))
+
+(use-package dired-k
+  :ensure t
+  :config
+  (setq dired-k-style 'git)
+  (add-hook 'dired-initial-position-hook #'dired-k) 
+  (add-hook 'dired-after-readin-hook #'dired-k-no-revert))
+
+(use-package ls-lisp
+  :config
+  (setq ls-lisp-use-insert-directory-program nil)
+  (setq ls-lisp-dirs-first t))
+
+
+
+;; (use-package helm
+;;   :ensure t
+;;   :diminish helm-mode
+;;   :init 
+;;   (require 'helm-config)
+;;   (setq helm-split-window-in-side-p t)
+;;   (setq helm-display-header-line nil)
+;;   (setq helm-ff-skip-boring-files t)
+;;   (setq helm-boring-file-regexp-list
+;; 	'("\\.git$" "\\.hg$" "\\.svn$" "\\.CVS$" "\\._darcs$" "\\.la$" "\\.o$" "~$"
+;; 	  "\\.so$" "\\.a$" "\\.elc$" "\\.fas$" "\\.fasl$" "\\.pyc$" "\\.pyo$"
+;;           "\\.dx64fsl"))
+;;   (helm-mode)
+;;   :bind
+;;   (("M-x" . helm-M-x)
+;;    ("M-y" . helm-show-kill-ring)
+;;    ("C-x b" . helm-mini)
+;;    ("C-x C-f" . helm-find-files)
+;;    ("M-o" . helm-occur)
+;;    :map helm-map
+;;    ("<tab>" . helm-execute-persistent-action)
+;;    ("C-i" . helm-execute-persistent-action)
+;;    ("C-z" . helm-select-action)))
 
 (use-package undo-tree
   :ensure t
@@ -855,6 +910,7 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
    (quote
     ("19f68ed86c05e6810925c2985f873f7ad728079ade01f5844d7d61e82dcbae4a" "5310b88333fc64c0cb34a27f42fa55ce371438a55f02ac7a4b93519d148bd03d" "67e998c3c23fe24ed0fb92b9de75011b92f35d3e89344157ae0d544d50a63a72" "e91ca866d6cbb79786e314e0466f4f1b8892b72e77ed702e53bf7565e0dfd469" default)))
  '(elfeed-feeds (quote ("http://planet.emacsen.org/atom.xml")))
+ '(fringe-mode (quote (4 . 4)) nil (fringe))
  '(neo-auto-indent-point t)
  '(neo-hidden-regexp-list
    (quote
@@ -872,7 +928,7 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
  '(org-time-stamp-custom-formats (quote ("<%e %b, %Y>" . "<%e %b, %Y %H:%M>")))
  '(package-selected-packages
    (quote
-    (dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent)))
+    (dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent)))
  '(safe-local-variable-values
    (quote
     ((Package . IMAGES)
@@ -889,21 +945,6 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
  '(spaceline-all-the-icons-highlight-file-name t)
  '(spaceline-all-the-icons-separator-type (quote none))
  '(spaceline-all-the-icons-slim-render t))
-
-;; (custom-set-faces
-;;  ;; custom-set-faces was added by Custom.
-;;  ;; If you edit it by hand, you could mess it up, so be careful.
-;;  ;; Your init file should contain only one such instance.
-;;  ;; If there is more than one, they won't work right.
-;;  '(fringe ((t (:background "#3F3F3F" :foreground "#DCDCCC"))))
-;;  '(helm-source-header ((t (:background "#2B2B2B" :foreground "#F0DFAF" :box nil :underline nil :weight bold))))
-;;  '(linum ((t (:background "#3F3F3F" :foreground "#7f7f7f" :height 0.8))))
-;;  '(mode-line ((t (:background "#2B2B2B" :foreground "#8FB28F" :box nil))))
-;;  '(mode-line-highlight ((t (:box nil))))
-;;  '(mode-line-inactive ((t (:background "#383838" :foreground "#5F7F5F" :box nil))))
-;;  '(neo-dir-link-face ((t (:inherit font-lock-function-name-face))))
-;;  '(neo-file-link-face ((t nil)))
-;;  '(org-block-background ((t (:background "#3A3A3A")))))
 
 
 ;;;
@@ -964,7 +1005,9 @@ the current buffer."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#21242b" :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 140 :width normal :foundry "nil" :family "Menlo"))))
+ '(default ((t (:inherit nil :stipple nil :background "#21242b" :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
+ '(dired-directory ((t (:foreground "#51afef"))))
+ '(dired-symlink ((t (:foreground "#46D9FF"))))
  '(mode-line ((t (:background "#282c34" :box (:line-width 4 :color "#282c34")))))
  '(mode-line-inactive ((t (:background "#1d2026" :foreground "#545668" :box (:line-width 4 :color "#1d2026")))))
  '(solaire-mode-line-face ((t (:inherit mode-line :background "#1c1f25" :box (:line-width 4 :color "#1c1f25")))))
