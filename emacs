@@ -143,7 +143,10 @@
 
 (use-package spaceline-all-the-icons
   :ensure t
-  :init
+  :config
+  (setq spaceline-all-the-icons-highlight-file-name t)
+  (setq spaceline-all-the-icons-separator-type 'none)
+  (setq spaceline-all-the-icons-slim-render t)
   (spaceline-all-the-icons-theme)
   (spaceline-all-the-icons--setup-anzu)
   (spaceline-all-the-icons--setup-neotree))
@@ -736,7 +739,7 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
   (setq org-odd-levels-only nil)
   (setq org-time-stamp-custom-formats '("<%e %b, %Y>" .
                                         "<%e %b, %Y %H:%M>"))
-  
+
   (setq org-refile-targets '((nil :maxlevel . 9)
                              (org-agenda-files :maxlevel . 9)))
   (setq org-outline-path-complete-in-steps nil)
@@ -906,46 +909,24 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   (quote
-    ("19f68ed86c05e6810925c2985f873f7ad728079ade01f5844d7d61e82dcbae4a" "5310b88333fc64c0cb34a27f42fa55ce371438a55f02ac7a4b93519d148bd03d" "67e998c3c23fe24ed0fb92b9de75011b92f35d3e89344157ae0d544d50a63a72" "e91ca866d6cbb79786e314e0466f4f1b8892b72e77ed702e53bf7565e0dfd469" default)))
  '(elfeed-feeds (quote ("http://planet.emacsen.org/atom.xml")))
- '(fringe-mode (quote (4 . 4)) nil (fringe))
- '(neo-auto-indent-point t)
- '(neo-hidden-regexp-list
-   (quote
-    ("^\\." "\\.pyc$" "~$" "^#.*#$" "\\.elc$" "\\.fasl")))
- '(neo-theme (quote nerd))
- '(neo-window-fixed-size t)
- '(neo-window-width 35)
- '(org-agenda-files (quote ("~/test.org")))
- '(org-blank-before-new-entry (quote ((heading . auto) (plain-list-item . auto))))
- '(org-fontify-whole-heading-line t)
- '(org-hide-emphasis-markers t)
- '(org-hide-leading-stars t)
- '(org-level-color-stars-only nil)
- '(org-odd-levels-only t)
- '(org-time-stamp-custom-formats (quote ("<%e %b, %Y>" . "<%e %b, %Y %H:%M>")))
+ '(fringe-mode (quote (4 . 4)) nil (fringe)) 
  '(package-selected-packages
    (quote
-    (dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent)))
- '(safe-local-variable-values
-   (quote
-    ((Package . IMAGES)
-     (Syntax . Zetalisp)
-     (Lowercase . T)
-     (Package . DIS)
-     (Syntax . Common-Lisp)
-     (Package . DYNAMIC-WINDOWS)
-     (Lowercase . Yes)
-     (Base . 10)
-     (Package . DW)
-     (Syntax . Common-lisp)
-     (Package . CCL))))
- '(spaceline-all-the-icons-highlight-file-name t)
- '(spaceline-all-the-icons-separator-type (quote none))
- '(spaceline-all-the-icons-slim-render t))
+    (dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent))))
 
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "#21242b" :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
+ '(dired-directory ((t (:foreground "#51afef"))))
+ '(dired-symlink ((t (:foreground "#46D9FF"))))
+ '(mode-line ((t (:background "#282c34" :box (:line-width 4 :color "#282c34")))))
+ '(mode-line-inactive ((t (:background "#1d2026" :foreground "#545668" :box (:line-width 4 :color "#1d2026")))))
+ '(solaire-mode-line-face ((t (:inherit mode-line :background "#1c1f25" :box (:line-width 4 :color "#1c1f25")))))
+ '(solaire-mode-line-inactive-face ((t (:inherit mode-line-inactive :background "#21242b" :box (:line-width 4 :color "#21242b"))))))
 
 ;;;
 ;;; Custom functions
@@ -1000,15 +981,3 @@ the current buffer."
 ;;; enable some disabled
 (put 'erase-buffer 'disabled nil)
 
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#21242b" :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
- '(dired-directory ((t (:foreground "#51afef"))))
- '(dired-symlink ((t (:foreground "#46D9FF"))))
- '(mode-line ((t (:background "#282c34" :box (:line-width 4 :color "#282c34")))))
- '(mode-line-inactive ((t (:background "#1d2026" :foreground "#545668" :box (:line-width 4 :color "#1d2026")))))
- '(solaire-mode-line-face ((t (:inherit mode-line :background "#1c1f25" :box (:line-width 4 :color "#1c1f25")))))
- '(solaire-mode-line-inactive-face ((t (:inherit mode-line-inactive :background "#21242b" :box (:line-width 4 :color "#21242b"))))))
