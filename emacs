@@ -1,71 +1,75 @@
 ;;; -*- Mode: emacs-lisp -*-
 
-(setq gc-cons-threshold (* 1024 1024 16))
 
-;;;
-;;; Configure basic UI settings
-;;;
+;;; ---------------------------------------------------------------------------
+;;; Startup settings
+;;; ---------------------------------------------------------------------------
 
 (setq inhibit-startup-message t)
-(setq initial-major-mode 'emacs-lisp-mode)
 (setq initial-scratch-message nil)
-(setq ring-bell-function 'ignore)
-(setq echo-keystrokes 0.1)
-(setq confirm-kill-emacs 'y-or-n-p)
-(setq scroll-conservatively 1)
-(setq next-line-add-newlines t)
 
 
-(defalias 'yes-or-no-p 'y-or-n-p)
-
-(setq-default indent-tabs-mode nil)
-
-
-;;;
+;;; ---------------------------------------------------------------------------
 ;;; Configure environment settings
-;;;
+;;; ---------------------------------------------------------------------------
 
-;;; macOS specific settings
+(add-to-list 'load-path "~/.emacs.d/lisp")
+
+(setq backup-by-copying t
+      delete-old-versions t
+      kept-new-versions 6
+      kept-old-versions 2
+      version-control t
+      backup-directory-alist '(("." . "~/.emacs.d/backups"))
+      auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+
+
+;;;
+;;; MacOS
+;;; 
+
 (when (eq window-system 'mac)
   (set-default-font "Menlo")
   (setq mac-command-modifier 'meta)
   (setq mac-option-modifier 'option)
-  ;;(setq mac-function-modifier 'hyper)
   (setenv "LANG" "en_US.UTF-8"))
 
-;;; Windows specific settings
+;;; 
+;;; Windows
+;;;
+
 (when (eq window-system 'w32)
   (set-face-attribute 'default nil :font "Consolas 11")
-  (setq-default default-directory (file-name-as-directory (getenv "HOMEPATH"))))
+  (setq-default default-directory (file-name-as-directory (getenv "HOMEPATH")))
 
-;;; Setup proxy on my work machine
-(when (string-match-p "C171*" system-name)
-  (setq url-proxy-services
-        '(("no_proxy" . "^\\(localhost\\|10.*\\)")
-          ("http" . "localhost:3128")
-          ("https" . "localhost:3128"))))
+  ;;; Setup proxy on my work machine
+  (when (string-match-p "CSTRL*" (system-name))
+    (setq url-proxy-services
+          '(("no_proxy" . "^\\(localhost\\|10.*\\)")
+            ("http" . "localhost:3128")
+            ("https" . "localhost:3128")))))
 
-(add-to-list 'load-path "~/.emacs.d/lisp")
+
+;;; ---------------------------------------------------------------------------
+;;; General editing behaviour
+;;; ---------------------------------------------------------------------------
+
+(setq-default indent-tabs-mode nil)
+(setq next-line-add-newlines t)
 
 ;;;
 ;;; Setup default modes
 ;;;
 
-;; Disable scrollbars, the toolbar and blinking cursor
-(when (display-graphic-p)
-  (scroll-bar-mode -1)
-  (tool-bar-mode -1)
-  (blink-cursor-mode -1)
-  ;;(menu-bar-mode -1)
-  )
-
 (delete-selection-mode 1)
 (show-paren-mode 1)
 (column-number-mode 1)
-(global-visual-line-mode 1)
 (global-hl-line-mode 1)
-(winner-mode 1)
 
+(global-auto-revert-mode 1)
+;; Also auto refresh dired, but be quiet about it
+(setq global-auto-revert-non-file-buffers t)
+(setq auto-revert-verbose nil)
 
 ;;;
 ;;; Setup some global keybindings
@@ -78,26 +82,14 @@
 (windmove-default-keybindings)
 
 
-;;; 
-;;; Configure backups and auto-saves
-;;; 
-
-(setq backup-by-copying t
-      delete-old-versions t
-      kept-new-versions 6
-      kept-old-versions 2
-      version-control t
-      backup-directory-alist '(("." . "~/.emacs.d/backups"))
-      auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
-
-
-;;;
+;;; ---------------------------------------------------------------------------
 ;;; Setup the packaging system
 ;;;
 ;;; Add MELPA to the list of package repositories, initialize the
 ;;; system and make sure that USE-PACKAGE is installed.  All
 ;;; subsequent package definitions make use of it.
-;;; 
+;;; ---------------------------------------------------------------------------
+
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 (package-initialize)
@@ -107,53 +99,68 @@
   (package-install 'use-package))
 
 
+;;; ---------------------------------------------------------------------------
+;;; UI Setup
 ;;;
-;;; Package definitions
-;;;
+;;; Customize visual settings.  Loads the Doom One theme with solaire mode.
+;;; Also includes the mode-line from Doom Emacs.
+;;; ---------------------------------------------------------------------------
 
-;;; UI
+;; Disable scrollbars, the toolbar and blinking cursor
+(when (display-graphic-p)
+  (scroll-bar-mode -1)
+  (tool-bar-mode -1)
+  (blink-cursor-mode -1))
+
+(setq ring-bell-function 'ignore)
+(setq echo-keystrokes 0.1)
+(setq scroll-conservatively 1)
+
+(defalias 'yes-or-no-p 'y-or-n-p)
+
+
+;;; 
+;;; Configure theme
+;;; 
 
 (use-package doom-themes
   :ensure t
+  :preface
+  ;; Hides the fringe in the minibuffer for a cleaner look
+  (defun om/hide-fringe-in-minibuffer ()
+    (set-window-fringes (minibuffer-window) 0 0))
+
+  (add-hook 'minibuffer-setup-hook #'om/hide-fringe-in-minibuffer)
+  (om/hide-fringe-in-minibuffer) 
   :init
   (setq doom-themes-enable-bold t)
-  (setq doom-themes-enable-italic t)
-  (doom-themes-neotree-config)
+  (setq doom-themes-enable-italic t) 
   :config
-  (load-theme 'doom-one 'no-confirm))
+  (doom-themes-neotree-config)
+  (doom-themes-org-config) 
+  (load-theme 'doom-one 'no-confirm)
+  (require 'doom-modeline))
 
+;; brighten buffers (that represent real files) 
 (use-package solaire-mode
   :ensure t
-  :init
-  (add-hook 'after-change-major-mode-hook #'turn-on-solaire-mode))
+  :requires doom-themes
+  :hook (after-change-major-mode . turn-on-solaire-mode))
 
-(defun om/hide-fringe-in-minibuffer ()
-  (set-window-fringes (minibuffer-window) 0 0))
-(add-hook 'minibuffer-setup-hook #'om/hide-fringe-in-minibuffer)
-(om/hide-fringe-in-minibuffer)
 
-;; (use-package nlinum
-;;   :ensure t
-;;   :init
-;;   (add-hook 'prog-mode-hook 'nlinum-mode)
-;;   (setq nlinum-format "%4d "))
+;;;
+;;; Configure additional UI packages
+;;; 
 
-;; (use-package nlinum-hl
-;;   :ensure t)
-
-(use-package spaceline-all-the-icons
+;;; Display line numbers in programming modes (disabled)
+(use-package nlinum
+  :disabled t
   :ensure t
-  :config
-  (setq spaceline-all-the-icons-highlight-file-name t)
-  (setq spaceline-all-the-icons-separator-type 'none)
-  (setq spaceline-all-the-icons-slim-render t)
-  (spaceline-all-the-icons-theme)
-  (spaceline-all-the-icons--setup-anzu)
-  (spaceline-all-the-icons--setup-neotree))
+  :init
+  (setq nlinum-format "%4d ")
+  :hook (prog-mode . nlinum-mode))
 
-(defun om/truncate-lines ()
-  (toggle-truncate-lines 1))
-
+;;; Display a file tree (bound to C-c n)
 (use-package neotree
   :ensure t
   :config
@@ -163,19 +170,172 @@
   (setq neo-window-fixed-size nil)
   (setq neo-window-width 30)
   (setq neo-mode-line-type 'none)
-  (add-hook 'neotree-mode-hook #'om/truncate-lines)
+  (setq neo-smart-open t)
+  :hook (neotree-mode . (lambda () (toggle-truncate-lines 1)))
   :bind
   (("C-c n" . neotree)))
 
+(use-package anzu
+  :ensure t
+  :diminish anzu-mode
+  :init
+  (setq anzu-cons-mode-line-p nil) ; required to work with doom-modeline
+  :config
+  (global-anzu-mode))
 
+(use-package which-key
+  :ensure t
+  :diminish which-key-mode
+  :config
+  (which-key-mode))
 
-;;; Global modes
+(use-package beacon
+  :ensure t
+  :config
+  (beacon-mode))
 
 (use-package diminish
   :ensure t
   :diminish visual-line-mode
   :diminish eldoc-mode
   :diminish auto-revert-mode)
+
+
+;;; ---------------------------------------------------------------------------
+;;; Dired
+;;; ---------------------------------------------------------------------------
+
+(use-package dired
+  :init
+  (setq dired-dwim-target t)
+  (setq dired-listing-switches "-alh"))
+
+;;; Use dired-x for its omit-mode
+(use-package dired-x
+  :init
+  (setq-default dired-omit-files-p t)
+  (setq dired-omit-files "^\\...+$")
+  :bind
+  (:map dired-mode-map
+        (")" . dired-omit-mode)))
+
+(use-package dired-collapse
+  :ensure t
+  :hook ((dired-mode . dired-collapse-mode)
+         (dired-mode . (lambda () (toggle-truncate-lines 1)))))
+
+(use-package dired-k
+  :ensure t
+  :hook ((dired-initial-position . dired-k)
+         (dired-after-readin . dired-k-no-revert))
+  :init
+  (setq dired-k-style 'git)
+  (setq dired-k-human-readable t))
+
+(use-package dired-subtree
+  :ensure t
+  :bind
+  (:map dired-mode-map
+        ("<tab>" . dired-subtree-toggle)
+        ("<backtab>" . dired-subtree-cycle)))
+
+(use-package ls-lisp
+  :config 
+  (setq ls-lisp-use-insert-directory-program nil)
+  (setq ls-lisp-dirs-first t)
+  (setq ls-lisp-use-localized-time-format t))
+
+
+;;; ---------------------------------------------------------------------------
+;;; Completion
+;;; ---------------------------------------------------------------------------
+
+(use-package flx
+  :ensure t)
+
+(use-package ivy
+  :ensure t
+  :init
+  (require 'flx)
+  (setq ivy-wrap t)
+  (setq ivy-use-virtual-buffers nil)
+  (setq ivy-initial-inputs-alist nil)
+  (setq ivy-height 15)
+  (setq ivy-re-builders-alist '((t . ivy--regex-fuzzy)))
+  :config
+  (ivy-mode 1)
+  :bind
+  (("C-c C-r" . ivy-resume)))
+
+(use-package ivy-rich
+  :ensure t
+  :init
+  (setq ivy-rich-abbreviate-paths t)
+  (setq ivy-virtual-abbreviate 'full)
+  (setq ivy-rich-switch-buffer-align-virtual-buffer t)
+  :config
+  (ivy-set-display-transformer 'ivy-switch-buffer
+                               'ivy-rich-switch-buffer-transformer))
+
+(use-package counsel
+  :ensure t
+  :init
+  (setq confirm-nonexistent-file-or-buffer t)
+  (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)")
+  :bind
+  (("M-x" . counsel-M-x)
+   ("C-x C-f" . counsel-find-file)))
+
+;; Used for better sorting during `counsel-M-x`
+(use-package smex
+  :ensure t)
+
+
+;;; ---------------------------------------------------------------------------
+;;; In-buffer completion
+;;; ---------------------------------------------------------------------------
+
+(use-package company
+  :ensure t
+  :diminish company-mode
+  :bind
+  (("M-/" . company-complete)
+   :map company-active-map
+   ("C-n" . company-select-next)
+   ("C-p" . company-select-previous)
+   ("C-d" . company-show-doc-buffer))
+  :init
+  (setq company-tooltip-idle-delay 0.3)
+  (setq company-tooltip-limit 20)
+  :hook (prog-mode . company-mode)
+  :config
+  (defun company-mode/backend-with-yas (backend)
+    (if (and (listp backend) (member 'company-yasnippet backend))
+        backend
+      (append (if (consp backend) backend (list backend))
+              '(:with company-yasnippet))))
+
+  (setq company-backends (mapcar #'company-mode/backend-with-yas company-backends)))
+
+(use-package company-web
+  :ensure t)
+
+
+;;; ---------------------------------------------------------------------------
+;;; Miscellaneous
+;;; ---------------------------------------------------------------------------
+
+(use-package undo-tree
+  :ensure t
+  :diminish undo-tree-mode
+  :config
+  (global-undo-tree-mode))
+
+(use-package dash-at-point
+  :ensure t
+  :bind
+  (("C-c d" . dash-at-point)))
+
 
 (use-package ace-jump-mode
   :ensure t
@@ -192,127 +352,15 @@
   :bind
   (("M-p" . ace-window)))
 
-(use-package flx
-  :ensure t)
-
-(use-package ivy
-  :ensure t
-  :init
-  (require 'flx)
-  (setq ivy-wrap t)
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-initial-inputs-alist nil)
-  (setq ivy-height 15)
-  (setq ivy-re-builders-alist '((t . ivy--regex-fuzzy)))
-  :config
-  (ivy-mode 1)
-  :bind
-  (("C-c C-r" . ivy-resume)))
-
-(use-package counsel
-  :ensure t
-  :init
-  (setq confirm-nonexistent-file-or-buffer t)
-  (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)")
-  :bind
-  (("M-x" . counsel-M-x)
-   ("C-x C-f" . counsel-find-file)))
-
-(use-package dired-collapse
-  :ensure t
-  :config
-  (add-hook 'dired-mode-hook #'dired-collapse-mode)
-  (add-hook 'dired-mode-hook #'om/truncate-lines))
-
-(use-package dired-k
-  :ensure t
-  :config
-  (setq dired-k-style 'git)
-  (add-hook 'dired-initial-position-hook #'dired-k) 
-  (add-hook 'dired-after-readin-hook #'dired-k-no-revert))
-
-(use-package ls-lisp
-  :config
-  (setq ls-lisp-use-insert-directory-program nil)
-  (setq ls-lisp-dirs-first t))
-
-
-
-;; (use-package helm
-;;   :ensure t
-;;   :diminish helm-mode
-;;   :init 
-;;   (require 'helm-config)
-;;   (setq helm-split-window-in-side-p t)
-;;   (setq helm-display-header-line nil)
-;;   (setq helm-ff-skip-boring-files t)
-;;   (setq helm-boring-file-regexp-list
-;; 	'("\\.git$" "\\.hg$" "\\.svn$" "\\.CVS$" "\\._darcs$" "\\.la$" "\\.o$" "~$"
-;; 	  "\\.so$" "\\.a$" "\\.elc$" "\\.fas$" "\\.fasl$" "\\.pyc$" "\\.pyo$"
-;;           "\\.dx64fsl"))
-;;   (helm-mode)
-;;   :bind
-;;   (("M-x" . helm-M-x)
-;;    ("M-y" . helm-show-kill-ring)
-;;    ("C-x b" . helm-mini)
-;;    ("C-x C-f" . helm-find-files)
-;;    ("M-o" . helm-occur)
-;;    :map helm-map
-;;    ("<tab>" . helm-execute-persistent-action)
-;;    ("C-i" . helm-execute-persistent-action)
-;;    ("C-z" . helm-select-action)))
-
-(use-package undo-tree
-  :ensure t
-  :diminish undo-tree-mode
-  :init
-  (global-undo-tree-mode))
-
-(use-package company
-  :ensure t
-  :diminish company-mode
-  :bind
-  (("M-/" . company-complete)
-   :map company-active-map
-   ("C-n" . company-select-next)
-   ("C-p" . company-select-previous)
-   ("C-d" . company-show-doc-buffer))
-  :init
-  (setq company-tooltip-idle-delay 0.3)
-  (setq company-tooltip-limit 20)
-  (add-hook 'prog-mode-hook 'global-company-mode))
-
-(use-package company-web
-  :ensure t)
-
-(use-package window-numbering
-  :ensure t
-  :init
-  (window-numbering-mode))
-
-(use-package which-key
-  :ensure t
-  :diminish which-key-mode
-  :init
-  (which-key-mode))
-
-(use-package anzu
-  :ensure t
-  :diminish anzu-mode
-  :init
-  (global-anzu-mode))
-
-(use-package beacon
-  :ensure t
-  :init
-  (beacon-mode))
-
-(use-package dash-at-point
-  :ensure t
-  :bind
-  (("C-c d" . dash-at-point)))
 
 ;;; Programming modes
+
+(use-package magit
+  :ensure t
+  :bind
+  (("C-c g" . magit-status)))
+
+
 
 (let ((slime-helper (expand-file-name "~/.roswell/helper.el")))
   (when (file-exists-p slime-helper)
@@ -341,18 +389,16 @@
 (use-package paredit
   :ensure t
   :diminish paredit-mode
-  :config
-  (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
-  (add-hook 'lisp-mode-hook #'enable-paredit-mode)
-  (add-hook 'lisp-interaction-mode-hook #'enable-paredit-mode))
+  :hook ((emacs-lisp-mode . enable-paredit-mode)
+         (lisp-mode . enable-paredit-mode)
+         (lisp-interaction-mode . enable-paredit-mode)))
 
 (use-package web-mode
   :ensure t
   :mode "\\.html\\'"
-  :config
-  (add-hook 'web-mode-hook
-	    (lambda () 
-	      (add-to-list (make-local-variable 'company-backends) 'company-web-html))))
+  :hook
+  (web-mode . (lambda () 
+                (add-to-list (make-local-variable 'company-backends) 'company-web-html))))
 
 (use-package js2-mode
   :ensure t
@@ -361,13 +407,30 @@
 (use-package aggressive-indent
   :ensure t
   :diminish aggressive-indent-mode
+  :hook (prog-mode . aggressive-indent-mode))
+
+
+;;; ---------------------------------------------------------------------------
+;;; Applications
+;;; ---------------------------------------------------------------------------
+
+;;; Elfeed
+
+(use-package elfeed
+  :ensure t)
+
+(use-package elfeed-org
+  :after elfeed
+  :ensure t
+  :init
+  (setq rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org"))
   :config
-  (add-hook 'prog-mode-hook 'aggressive-indent-mode))
+  (elfeed-org))
 
 
-
+;;; ---------------------------------------------------------------------------
 ;;; org-mode
-
+;;; ---------------------------------------------------------------------------
 
 (use-package org
   :ensure t
@@ -697,10 +760,10 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
     (if (equal major-mode 'org-agenda-mode)
         (progn
           (org-with-point-at (bh/get-pom-from-agenda-restriction-or-point)
-            (bh/narrow-to-org-project)
-            (save-excursion
-              (bh/find-project-task)
-              (org-agenda-set-restriction-lock)))
+                             (bh/narrow-to-org-project)
+                             (save-excursion
+                               (bh/find-project-task)
+                               (org-agenda-set-restriction-lock)))
           (org-agenda-redo)
           (beginning-of-buffer))
       (bh/narrow-to-org-project)
@@ -717,7 +780,7 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
     (interactive)
     (if (equal major-mode 'org-agenda-mode)
         (org-with-point-at (bh/get-pom-from-agenda-restriction-or-point)
-          (bh/narrow-up-one-org-level))
+                           (bh/narrow-up-one-org-level))
       (bh/narrow-up-one-org-level)))
   :bind
   (("C-c c" . org-capture)
@@ -900,6 +963,90 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
   (("C-c v" . org-brain-visualize)))
 
 
+;;; ---------------------------------------------------------------------------
+;;; eshell
+;;; ---------------------------------------------------------------------------
+
+(use-package eshell
+  :preface
+  (defun om/eshell-shortened-path (path max-len)
+    "Return a modified version of `path', replacing some components
+      with single characters starting from the left to try and get
+      the path down to `max-len'"
+    (let* ((components (split-string (abbreviate-file-name path) "/"))
+           (len (+ (1- (length components))
+                   (reduce '+ components :key 'length)))
+           (str ""))
+      (while (and (> len max-len)
+                  (cdr components))
+        (setq str (concat str (if (= 0 (length (car components)))
+                                  "/"
+                                (string (elt (car components) 0) ?/)))
+              len (- len (1- (length (car components))))
+              components (cdr components)))
+      (concat str (reduce (lambda (a b) (concat a "/" b)) components))))
+
+  (defun om/eshell-prompt ()
+    (concat
+     "\["
+     (propertize
+      (concat
+       (user-login-name)
+       "@"
+       (when (string-match "^[^.]+" (system-name))
+         (match-string 0 (system-name))))
+      'face `(:inherit 'font-lock-string-face)) 
+     "\]:"
+     (om/eshell-shortened-path (eshell/pwd) 20)
+     (if (= (user-uid) 0) "# " "$ ")))
+
+  (defun om/eshell-here () 
+    (interactive)
+    (let* ((parent (if (buffer-file-name)
+                       (file-name-directory (buffer-file-name))
+                     default-directory))
+           (height (/ (window-total-height) 3))
+           (name   (car (last (split-string parent "/" t)))))
+      (split-window-vertically (- height))
+      (other-window 1)
+      (eshell "new")
+      (rename-buffer (concat "*eshell: " name "*"))
+
+      (insert (concat "ls"))
+      (eshell-send-input)))
+
+  (defun om/delete-single-window (&optional window)
+    (interactive)
+    (save-current-buffer
+      (setq window (or window (selected-window)))
+      (select-window window)
+      (kill-buffer)
+      (if (one-window-p t)
+          (delete-frame)
+        (delete-window (selected-window)))))
+
+  (defun eshell/x ()
+    (om/delete-single-window))
+  
+  (defun eshell/clear ()
+    "Clear the eshell buffer."
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (eshell-send-input)))
+  :init
+  ;; customize prompt
+  (setq eshell-prompt-function 'om/eshell-prompt)
+  (setq eshell-prompt-regexp "^.*[#$] ")
+  ;; others
+  (setq eshell-scroll-to-bottom-on-input 'all)
+  (setq eshell-error-if-no-glob t)
+  (setq eshell-hist-ignoredups t)
+  (setq eshell-save-history-on-exit t)
+  (setq eshell-destroy-buffer-when-process-dies t)
+  :bind
+  (("C-c e" . om/eshell-here)))
+
+
 ;;;
 ;;; Variables set by Emacs customization facility
 ;;; 
@@ -909,11 +1056,16 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(elfeed-feeds (quote ("http://planet.emacsen.org/atom.xml")))
- '(fringe-mode (quote (4 . 4)) nil (fringe)) 
+ '(fringe-mode (quote (4 . 4)) nil (fringe))
  '(package-selected-packages
    (quote
-    (dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent))))
+    (elfeed-org company-yasnippets company-yasnippet yasnippet-snippets dired-subtree smex iedit projectile counsel-notmuch notmuch ivy-rich git-gutter-fringe dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent)))
+ '(safe-local-variable-values (quote ((bug-reference-bug-regexp . "#\\(?2:[0-9]+\\)"))))
+ '(spaceline-all-the-icons-eyebrowse-display-name nil)
+ '(spaceline-all-the-icons-hide-long-buffer-path nil)
+ '(spaceline-all-the-icons-highlight-file-name t)
+ '(spaceline-all-the-icons-icon-set-window-numbering (quote circle))
+ '(spaceline-all-the-icons-window-number-always-visible nil))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -922,11 +1074,13 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
  ;; If there is more than one, they won't work right.
  '(default ((t (:inherit nil :stipple nil :background "#21242b" :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
  '(dired-directory ((t (:foreground "#51afef"))))
- '(dired-symlink ((t (:foreground "#46D9FF"))))
  '(mode-line ((t (:background "#282c34" :box (:line-width 4 :color "#282c34")))))
  '(mode-line-inactive ((t (:background "#1d2026" :foreground "#545668" :box (:line-width 4 :color "#1d2026")))))
+ '(solaire-default-face ((t (:inherit default :background "#282c34"))))
  '(solaire-mode-line-face ((t (:inherit mode-line :background "#1c1f25" :box (:line-width 4 :color "#1c1f25")))))
- '(solaire-mode-line-inactive-face ((t (:inherit mode-line-inactive :background "#21242b" :box (:line-width 4 :color "#21242b"))))))
+ '(solaire-mode-line-inactive-face ((t (:inherit mode-line-inactive :background "#21242b" :box (:line-width 4 :color "#21242b")))))
+ '(spaceline-highlight-face ((t (:inherit (quote mode-line)))))
+ '(web-mode-html-tag-bracket-face ((t (:foreground "gray")))))
 
 ;;;
 ;;; Custom functions
@@ -954,30 +1108,3 @@ Skip project and sub-project tasks, habits, and loose non-project tasks."
                                 LaTeX-mode TeX-mode
                                 xml-mode html-mode css-mode)))
       (indent-region (region-beginning) (region-end) nil)))
-
-(defun start-or-switch-to (function buffer-name)
-  "Invoke FUNCTION if there is no buffer with BUFFER-NAME.
-Otherwise switch to the buffer named BUFFER-NAME.  Don't clobber
-the current buffer."
-  (if (not (get-buffer buffer-name))
-      (progn
-        (split-window-sensibly (selected-window))
-        (other-window 1)
-        (funcall function))
-    (switch-to-buffer-other-window buffer-name)))
-
-(defun visit-term-buffer ()
-  "Create or visit a terminal buffer."
-  (interactive)
-  (start-or-switch-to (lambda ()
-			(ansi-term (getenv "SHELL")))
-                      "*ansi-term*"))
-
-
-(global-set-key (kbd "H-t") 'visit-term-buffer)
-(global-set-key (kbd "C-c t") 'visit-term-buffer)
-(global-set-key (kbd "H-r") 'slime-repl)
-
-;;; enable some disabled
-(put 'erase-buffer 'disabled nil)
-
