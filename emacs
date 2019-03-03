@@ -66,6 +66,10 @@
 (column-number-mode 1)
 (global-hl-line-mode 1)
 
+(pixel-scroll-mode 1)
+(setq fast-but-imprecise-scrolling t)
+(setq pixel-resolution-fine-flag t)
+
 (global-auto-revert-mode 1)
 ;; Also auto refresh dired, but be quiet about it
 (setq global-auto-revert-non-file-buffers t)
@@ -98,6 +102,9 @@
   (package-refresh-contents)
   (package-install 'use-package))
 
+(require 'use-package-ensure)
+(setq use-package-always-ensure t)
+
 
 ;;; ---------------------------------------------------------------------------
 ;;; UI Setup
@@ -114,7 +121,6 @@
 
 (setq ring-bell-function 'ignore)
 (setq echo-keystrokes 0.1)
-(setq scroll-conservatively 1)
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 
@@ -124,7 +130,6 @@
 ;;; 
 
 (use-package doom-themes
-  :ensure t
   :preface
   ;; Hides the fringe in the minibuffer for a cleaner look
   (defun om/hide-fringe-in-minibuffer ()
@@ -138,31 +143,27 @@
   :config
   (doom-themes-neotree-config)
   (doom-themes-org-config) 
-  (load-theme 'doom-one 'no-confirm)
-  (require 'doom-modeline))
+  (load-theme 'doom-one 'no-confirm))
 
 ;; brighten buffers (that represent real files) 
 (use-package solaire-mode
-  :ensure t
   :requires doom-themes
-  :hook (after-change-major-mode . turn-on-solaire-mode))
+  :config
+  (solaire-mode-swap-bg)
+  (solaire-global-mode t)
+  :hook
+  ((change-major-mode after-revert ediff-prepare-buffer) . turn-on-solaire-mode)
+  (minibuffer-setup . solaire-mode-in-minibuffer))
 
+(use-package doom-modeline
+  :hook (after-init . doom-modeline-mode))
 
 ;;;
 ;;; Configure additional UI packages
 ;;; 
 
-;;; Display line numbers in programming modes (disabled)
-(use-package nlinum
-  :disabled t
-  :ensure t
-  :init
-  (setq nlinum-format "%4d ")
-  :hook (prog-mode . nlinum-mode))
-
 ;;; Display a file tree (bound to C-c n)
 (use-package neotree
-  :ensure t
   :config
   (setq neo-auto-indent-point t)
   (setq neo-hidden-regexp-list '("^\\." "\\.pyc$" "~$" "^#.*#$" "\\.elc$" "\\.fasl"))
@@ -176,7 +177,6 @@
   (("C-c n" . neotree)))
 
 (use-package anzu
-  :ensure t
   :diminish anzu-mode
   :init
   (setq anzu-cons-mode-line-p nil) ; required to work with doom-modeline
@@ -184,18 +184,15 @@
   (global-anzu-mode))
 
 (use-package which-key
-  :ensure t
   :diminish which-key-mode
   :config
   (which-key-mode))
 
 (use-package beacon
-  :ensure t
   :config
   (beacon-mode))
 
 (use-package diminish
-  :ensure t
   :diminish visual-line-mode
   :diminish eldoc-mode
   :diminish auto-revert-mode)
@@ -220,12 +217,10 @@
         (")" . dired-omit-mode)))
 
 (use-package dired-collapse
-  :ensure t
   :hook ((dired-mode . dired-collapse-mode)
          (dired-mode . (lambda () (toggle-truncate-lines 1)))))
 
 (use-package dired-k
-  :ensure t
   :hook ((dired-initial-position . dired-k)
          (dired-after-readin . dired-k-no-revert))
   :init
@@ -233,7 +228,6 @@
   (setq dired-k-human-readable t))
 
 (use-package dired-subtree
-  :ensure t
   :bind
   (:map dired-mode-map
         ("<tab>" . dired-subtree-toggle)
@@ -250,11 +244,9 @@
 ;;; Completion
 ;;; ---------------------------------------------------------------------------
 
-(use-package flx
-  :ensure t)
+(use-package flx)
 
 (use-package ivy
-  :ensure t
   :init
   (require 'flx)
   (setq ivy-wrap t)
@@ -268,17 +260,15 @@
   (("C-c C-r" . ivy-resume)))
 
 (use-package ivy-rich
-  :ensure t
+  :config
+  (ivy-rich-mode 1)
   :init
+  (setq ivy-format-function #'ivy-format-function-line)
   (setq ivy-rich-abbreviate-paths t)
   (setq ivy-virtual-abbreviate 'full)
-  (setq ivy-rich-switch-buffer-align-virtual-buffer t)
-  :config
-  (ivy-set-display-transformer 'ivy-switch-buffer
-                               'ivy-rich-switch-buffer-transformer))
+  (setq ivy-rich-switch-buffer-align-virtual-buffer t))
 
 (use-package counsel
-  :ensure t
   :init
   (setq confirm-nonexistent-file-or-buffer t)
   (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)")
@@ -287,8 +277,7 @@
    ("C-x C-f" . counsel-find-file)))
 
 ;; Used for better sorting during `counsel-M-x`
-(use-package smex
-  :ensure t)
+(use-package smex)
 
 
 ;;; ---------------------------------------------------------------------------
@@ -296,7 +285,6 @@
 ;;; ---------------------------------------------------------------------------
 
 (use-package company
-  :ensure t
   :diminish company-mode
   :bind
   (("M-/" . company-complete)
@@ -317,8 +305,7 @@
 
   (setq company-backends (mapcar #'company-mode/backend-with-yas company-backends)))
 
-(use-package company-web
-  :ensure t)
+(use-package company-web)
 
 
 ;;; ---------------------------------------------------------------------------
@@ -326,29 +313,24 @@
 ;;; ---------------------------------------------------------------------------
 
 (use-package undo-tree
-  :ensure t
   :diminish undo-tree-mode
   :config
   (global-undo-tree-mode))
 
 (use-package dash-at-point
-  :ensure t
   :bind
   (("C-c d" . dash-at-point)))
 
 
 (use-package ace-jump-mode
-  :ensure t
   :bind
   (("C-c SPC" . ace-jump-mode)))
 
 (use-package ace-jump-zap
-  :ensure t
   :bind
   (("C-c z" . ace-jump-zap-up-to-char)))
 
 (use-package ace-window
-  :ensure t
   :bind
   (("M-p" . ace-window)))
 
@@ -356,23 +338,23 @@
 ;;; Programming modes
 
 (use-package magit
-  :ensure t
   :bind
   (("C-c g" . magit-status)))
 
 
+;;; FIXME: clean up roswell init
+(setenv "PATH" (concat (getenv "PATH") ":/Users/entrox/.roswell/bin"))
+(setq exec-path (append exec-path '("/Users/entrox/.roswell/bin")))
 
 (let ((slime-helper (expand-file-name "~/.roswell/helper.el")))
   (when (file-exists-p slime-helper)
     (load slime-helper)))
 
-(use-package slime 
+(use-package slime
   :config
-  (require 'slime-company)
-  
   (setq slime-net-coding-system 'utf-8-unix)
   (setq inferior-lisp-program "ros -Q run")
-  (setq slime-contribs '(slime-fancy slime-listener-hooks slime-indentation))
+  (setq slime-contribs '(slime-fancy slime-listener-hooks slime-indentation slime-company))
 
   ;; (define-common-lisp-style "omarkov"
   ;;   "My own style."
@@ -386,26 +368,23 @@
   
   (put :default-initargs 'common-lisp-indent-function '(&rest)))
 
+
 (use-package paredit
-  :ensure t
   :diminish paredit-mode
   :hook ((emacs-lisp-mode . enable-paredit-mode)
          (lisp-mode . enable-paredit-mode)
          (lisp-interaction-mode . enable-paredit-mode)))
 
 (use-package web-mode
-  :ensure t
   :mode "\\.html\\'"
   :hook
   (web-mode . (lambda () 
                 (add-to-list (make-local-variable 'company-backends) 'company-web-html))))
 
 (use-package js2-mode
-  :ensure t
   :defer t)
 
 (use-package aggressive-indent
-  :ensure t
   :diminish aggressive-indent-mode
   :hook (prog-mode . aggressive-indent-mode))
 
@@ -416,12 +395,10 @@
 
 ;;; Elfeed
 
-(use-package elfeed
-  :ensure t)
+(use-package elfeed)
 
 (use-package elfeed-org
   :after elfeed
-  :ensure t
   :init
   (setq rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org"))
   :config
@@ -433,15 +410,14 @@
 ;;; ---------------------------------------------------------------------------
 
 (use-package org
-  :ensure t
   :bind
   (("C-c c" . org-capture)
    ("C-c a" . org-agenda))
   :config
   ;; Files & Directories
   (setq org-directory (expand-file-name "~/org"))
-  (setq org-agenda-files '("~/org"))
-  (setq org-default-notes-file (concat org-directory "/capture.org"))
+  (setq org-agenda-files '("~/org/inbox.org" "~/org/gtd.org" "~/org/tickler.org"))
+  (setq org-default-notes-file "~/org/inbox.org")
 
   ;; UI
   (setq org-fontify-whole-heading-line t)
@@ -452,7 +428,7 @@
                                         "<%e %b, %Y %H:%M>"))
 
   ;; Behaviour
-  (setq org-log-done t)
+  (setq org-log-done nil)
   (setq org-use-fast-todo-selection t)
   (setq org-todo-keywords
         '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
@@ -471,16 +447,14 @@
   
   ;; Capture
   (setq org-capture-templates
-        '(("t" "Todo" entry (file "~/org/capture.org")
-           "* TODO %?")
-          ("n" "Note" entry (file"~/org/capture.org")
-           "* %?"))))
-
-(use-package org-super-agenda
-  :ensure t)
+        '(("t" "Todo [inbox]" entry
+           (file+headline "~/org/inbox.org" "Tasks")
+           "* TODO %i%?")
+          ("T" "Tickler" entry
+           (file+headline "~/org/tickler.org" "Tickler")
+           "* %i%? \n %U"))))
 
 (use-package org-brain
-  :ensure t
   :bind
   (("C-c v" . org-brain-visualize)))
 
@@ -489,15 +463,14 @@
 ;;; eshell
 ;;; ---------------------------------------------------------------------------
 
-(use-package shrink-path
-  :ensure t)
+(use-package shrink-path)
 
 (use-package eshell
   :preface
   (defun om/current-git-branch ()
-    (let ((branch (car (loop for match in (split-string (shell-command-to-string "git branch") "\n")
-                             when (string-match "^\*" match)
-                             collect match))))
+    (let ((branch (car (cl-loop for match in (split-string (shell-command-to-string "git branch") "\n")
+                                when (string-match "^\*" match)
+                                collect match))))
       (if (not (eq branch nil))
           (concat " [" (substring branch 2) "]")
         "")))
@@ -505,13 +478,11 @@
   (defun om/eshell-prompt ()
     (concat
      "\["
-     (propertize
-      (concat
-       (user-login-name)
-       "@"
-       (when (string-match "^[^.]+" (system-name))
-         (match-string 0 (system-name))))
-      'face `(:inherit 'font-lock-string-face)) 
+     (propertize (concat  (user-login-name)
+                          "@"
+                          (when (string-match "^[^.]+" (system-name))
+                            (match-string 0 (system-name))))
+                 'face 'font-lock-string-face) 
      "\]:" 
      (let ((path (shrink-path-prompt default-directory)))
        (concat (propertize (car path) 'face 'font-lock-comment-face)
@@ -546,7 +517,7 @@
           (delete-frame)
         (delete-window (selected-window)))))
 
-  (defun eshell/x ()
+  (defun eshell/x (&rest args)
     (om/delete-single-window))
   
   (defun eshell/clear ()
@@ -577,16 +548,13 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("aa0a998c0aa672156f19a1e1a3fb212cdc10338fb50063332a0df1646eb5dfea" "4597d1e9bbf1db2c11d7cf9a70204fa42ffc603a2ba5d80c504ca07b3e903770" default)))
  '(fringe-mode (quote (4 . 4)) nil (fringe))
  '(package-selected-packages
    (quote
-    (org-bullets elfeed-org company-yasnippets company-yasnippet yasnippet-snippets dired-subtree smex iedit projectile counsel-notmuch notmuch ivy-rich git-gutter-fringe dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent)))
- '(safe-local-variable-values (quote ((bug-reference-bug-regexp . "#\\(?2:[0-9]+\\)"))))
- '(spaceline-all-the-icons-eyebrowse-display-name nil)
- '(spaceline-all-the-icons-hide-long-buffer-path nil)
- '(spaceline-all-the-icons-highlight-file-name t)
- '(spaceline-all-the-icons-icon-set-window-numbering (quote circle))
- '(spaceline-all-the-icons-window-number-always-visible nil))
+    (doom-modeline ttl-mode docker docker-compose-mode docker-tramp dockerfile-mode shrink-path org-bullets elfeed-org company-yasnippets company-yasnippet yasnippet-snippets dired-subtree smex iedit projectile counsel-notmuch notmuch ivy-rich git-gutter-fringe dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -595,12 +563,7 @@
  ;; If there is more than one, they won't work right.
  '(default ((t (:inherit nil :stipple nil :background "#21242b" :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
  '(dired-directory ((t (:foreground "#51afef"))))
- '(mode-line ((t (:background "#282c34" :box (:line-width 4 :color "#282c34")))))
- '(mode-line-inactive ((t (:background "#1d2026" :foreground "#545668" :box (:line-width 4 :color "#1d2026")))))
- '(solaire-default-face ((t (:inherit default :background "#282c34"))))
- '(solaire-mode-line-face ((t (:inherit mode-line :background "#1c1f25" :box (:line-width 4 :color "#1c1f25")))))
- '(solaire-mode-line-inactive-face ((t (:inherit mode-line-inactive :background "#21242b" :box (:line-width 4 :color "#21242b")))))
- '(spaceline-highlight-face ((t (:inherit (quote mode-line)))))
+ '(eshell-prompt ((t (:inherit default :foreground "#bbc2cf" :weight normal))))
  '(web-mode-html-tag-bracket-face ((t (:foreground "gray")))))
 
 ;;;
@@ -629,3 +592,4 @@
                                 LaTeX-mode TeX-mode
                                 xml-mode html-mode css-mode)))
       (indent-region (region-beginning) (region-end) nil)))
+
