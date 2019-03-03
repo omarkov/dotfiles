@@ -1,3 +1,4 @@
+
 ;;; -*- Mode: emacs-lisp -*-
 
 
@@ -14,14 +15,6 @@
 ;;; ---------------------------------------------------------------------------
 
 (add-to-list 'load-path "~/.emacs.d/lisp")
-
-(setq backup-by-copying t
-      delete-old-versions t
-      kept-new-versions 6
-      kept-old-versions 2
-      version-control t
-      backup-directory-alist '(("." . "~/.emacs.d/backups"))
-      auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
 
 
 ;;;
@@ -54,7 +47,6 @@
 ;;; General editing behaviour
 ;;; ---------------------------------------------------------------------------
 
-(setq-default indent-tabs-mode nil)
 (setq next-line-add-newlines t)
 
 ;;;
@@ -62,13 +54,8 @@
 ;;;
 
 (delete-selection-mode 1)
-(show-paren-mode 1)
 (column-number-mode 1)
 (global-hl-line-mode 1)
-
-(pixel-scroll-mode 1)
-(setq fast-but-imprecise-scrolling t)
-(setq pixel-resolution-fine-flag t)
 
 (global-auto-revert-mode 1)
 ;; Also auto refresh dired, but be quiet about it
@@ -113,17 +100,24 @@
 ;;; Also includes the mode-line from Doom Emacs.
 ;;; ---------------------------------------------------------------------------
 
-;; Disable scrollbars, the toolbar and blinking cursor
+;; disable blinking cursor
 (when (display-graphic-p)
-  (scroll-bar-mode -1)
-  (tool-bar-mode -1)
   (blink-cursor-mode -1))
 
-(setq ring-bell-function 'ignore)
+(pixel-scroll-mode 1)
+(setq fast-but-imprecise-scrolling t)
+(setq pixel-resolution-fine-flag t)
+
 (setq echo-keystrokes 0.1)
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 
+;;; enable some better defaults
+(use-package better-defaults
+  :config
+  ;; fix fullscreen (disabled on mac otherwise)
+  (when (eq window-system 'mac)
+    (menu-bar-mode 1)))
 
 ;;; 
 ;;; Configure theme
@@ -141,6 +135,7 @@
   (setq doom-themes-enable-bold t)
   (setq doom-themes-enable-italic t) 
   :config
+  (doom-themes-visual-bell-config)
   (doom-themes-neotree-config)
   (doom-themes-org-config) 
   (load-theme 'doom-one 'no-confirm))
@@ -203,12 +198,14 @@
 ;;; ---------------------------------------------------------------------------
 
 (use-package dired
+  :ensure nil
   :init
   (setq dired-dwim-target t)
   (setq dired-listing-switches "-alh"))
 
 ;;; Use dired-x for its omit-mode
 (use-package dired-x
+  :ensure nil
   :init
   (setq-default dired-omit-files-p t)
   (setq dired-omit-files "^\\...+$")
@@ -234,6 +231,7 @@
         ("<backtab>" . dired-subtree-cycle)))
 
 (use-package ls-lisp
+  :ensure nil
   :config 
   (setq ls-lisp-use-insert-directory-program nil)
   (setq ls-lisp-dirs-first t)
