@@ -333,6 +333,12 @@
   (("M-p" . ace-window)))
 
 
+(use-package mwim
+  :bind
+  (("C-a" . mwim-beginning)
+   ("C-e" . mwim-end)))
+
+
 ;;; Programming modes
 
 (use-package magit
@@ -552,7 +558,7 @@
  '(fringe-mode (quote (4 . 4)) nil (fringe))
  '(package-selected-packages
    (quote
-    (doom-modeline ttl-mode docker docker-compose-mode docker-tramp dockerfile-mode shrink-path org-bullets elfeed-org company-yasnippets company-yasnippet yasnippet-snippets dired-subtree smex iedit projectile counsel-notmuch notmuch ivy-rich git-gutter-fringe dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent))))
+    (mwim doom-modeline ttl-mode docker docker-compose-mode docker-tramp dockerfile-mode shrink-path org-bullets elfeed-org company-yasnippets company-yasnippet yasnippet-snippets dired-subtree smex iedit projectile counsel-notmuch notmuch ivy-rich git-gutter-fringe dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -567,18 +573,6 @@
 ;;;
 ;;; Custom functions
 ;;;
-
-;;; jump to beginning of line
-(define-key global-map [remap move-beginning-of-line]
-  (defun smart-beginning-of-line ()
-    "Move point to first non-whitespace character or beginning-of-line.
-  Move point to the first non-whitespace character on this line.
-  If point was already at that position, move point to beginning of line."
-    (interactive)
-    (let ((oldpos (point)))
-      (back-to-indentation)
-      (and (= oldpos (point))
-           (beginning-of-line)))))
 
 ;;; auto-indent after yank
 (defadvice insert-for-yank-1 (after indent-region activate)
