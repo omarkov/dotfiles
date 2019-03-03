@@ -1,18 +1,11 @@
-
-;;; -*- Mode: emacs-lisp -*-
-
-
-;;; ---------------------------------------------------------------------------
-;;; Startup settings
-;;; ---------------------------------------------------------------------------
-
-(setq inhibit-startup-message t)
-(setq initial-scratch-message nil)
+;;; emacs --- Initialization file for Emacs -*- Mode: emacs-lisp -*-
 
 
 ;;; ---------------------------------------------------------------------------
 ;;; Configure environment settings
 ;;; ---------------------------------------------------------------------------
+
+;;; Code:
 
 (add-to-list 'load-path "~/.emacs.d/lisp")
 
@@ -57,10 +50,10 @@
 (column-number-mode 1)
 (global-hl-line-mode 1)
 
-(global-auto-revert-mode 1)
-;; Also auto refresh dired, but be quiet about it
-(setq global-auto-revert-non-file-buffers t)
-(setq auto-revert-verbose nil)
+
+(setq delete-old-versions t
+      auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+
 
 ;;;
 ;;; Setup some global keybindings
@@ -81,6 +74,10 @@
 ;;; subsequent package definitions make use of it.
 ;;; ---------------------------------------------------------------------------
 
+
+;;; Commentary:
+;; 
+
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 (package-initialize)
@@ -94,6 +91,17 @@
 
 
 ;;; ---------------------------------------------------------------------------
+;;; Startup settings
+;;; ---------------------------------------------------------------------------
+
+(setq inhibit-startup-message t)
+(setq initial-scratch-message nil)
+
+(use-package dashboard
+  :config
+  (dashboard-setup-startup-hook))
+
+;;; ---------------------------------------------------------------------------
 ;;; UI Setup
 ;;;
 ;;; Customize visual settings.  Loads the Doom One theme with solaire mode.
@@ -104,9 +112,12 @@
 (when (display-graphic-p)
   (blink-cursor-mode -1))
 
-(pixel-scroll-mode 1)
-(setq fast-but-imprecise-scrolling t)
-(setq pixel-resolution-fine-flag t)
+(use-package pixel-scroll
+  :ensure nil
+  :config
+  (pixel-scroll-mode 1)
+  (setq fast-but-imprecise-scrolling t)
+  (setq pixel-resolution-fine-flag t))
 
 (setq echo-keystrokes 0.1)
 
@@ -130,17 +141,17 @@
     (set-window-fringes (minibuffer-window) 0 0))
 
   (add-hook 'minibuffer-setup-hook #'om/hide-fringe-in-minibuffer)
-  (om/hide-fringe-in-minibuffer) 
+  (om/hide-fringe-in-minibuffer)
   :init
   (setq doom-themes-enable-bold t)
-  (setq doom-themes-enable-italic t) 
+  (setq doom-themes-enable-italic t)
   :config
   (doom-themes-visual-bell-config)
   (doom-themes-neotree-config)
-  (doom-themes-org-config) 
+  (doom-themes-org-config)
   (load-theme 'doom-one 'no-confirm))
 
-;; brighten buffers (that represent real files) 
+;; brighten buffers (that represent real files)
 (use-package solaire-mode
   :requires doom-themes
   :config
@@ -232,11 +243,19 @@
 
 (use-package ls-lisp
   :ensure nil
-  :config 
+  :config
   (setq ls-lisp-use-insert-directory-program nil)
   (setq ls-lisp-dirs-first t)
   (setq ls-lisp-use-localized-time-format t))
 
+(use-package autorevert
+  :ensure nil
+  :init
+  (global-auto-revert-mode 1)
+  :config
+  ;; Also auto refresh dired, but be quiet about it
+  (setq global-auto-revert-non-file-buffers t)
+  (setq auto-revert-verbose nil))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Completion
@@ -262,9 +281,7 @@
   (ivy-rich-mode 1)
   :init
   (setq ivy-format-function #'ivy-format-function-line)
-  (setq ivy-rich-abbreviate-paths t)
-  (setq ivy-virtual-abbreviate 'full)
-  (setq ivy-rich-switch-buffer-align-virtual-buffer t))
+  (setq ivy-virtual-abbreviate 'full))
 
 (use-package counsel
   :init
@@ -284,6 +301,12 @@
 
 (use-package company
   :diminish company-mode
+  :preface
+  (defun company-mode/backend-with-yas (backend)
+    (if (and (listp backend) (member 'company-yasnippet backend))
+        backend
+      (append (if (consp backend) backend (list backend))
+              '(:with company-yasnippet))))
   :bind
   (("M-/" . company-complete)
    :map company-active-map
@@ -295,12 +318,6 @@
   (setq company-tooltip-limit 20)
   :hook (prog-mode . company-mode)
   :config
-  (defun company-mode/backend-with-yas (backend)
-    (if (and (listp backend) (member 'company-yasnippet backend))
-        backend
-      (append (if (consp backend) backend (list backend))
-              '(:with company-yasnippet))))
-
   (setq company-backends (mapcar #'company-mode/backend-with-yas company-backends)))
 
 (use-package company-web)
@@ -382,7 +399,7 @@
 (use-package web-mode
   :mode "\\.html\\'"
   :hook
-  (web-mode . (lambda () 
+  (web-mode . (lambda ()
                 (add-to-list (make-local-variable 'company-backends) 'company-web-html))))
 
 (use-package js2-mode
@@ -470,6 +487,7 @@
 (use-package shrink-path)
 
 (use-package eshell
+  :ensure nil
   :preface
   (defun om/current-git-branch ()
     (let ((branch (car (cl-loop for match in (split-string (shell-command-to-string "git branch") "\n")
@@ -486,17 +504,17 @@
                           "@"
                           (when (string-match "^[^.]+" (system-name))
                             (match-string 0 (system-name))))
-                 'face 'font-lock-string-face) 
-     "\]:" 
+                 'face 'font-lock-string-face)
+     "\]:"
      (let ((path (shrink-path-prompt default-directory)))
        (concat (propertize (car path) 'face 'font-lock-comment-face)
-               (propertize (cdr path) 'face 'font-lock-constant-face)
+               (propertize (cdr path) 'face 'font-lock-comment-face)
                (propertize (om/current-git-branch)
                            'face 'font-lock-function-name-face)
-               (propertize (if (= (user-uid) 0) " #" " $") 'face 'eshell-prompt-face)
+               (propertize (if (= (user-uid) 0) "#" "$") 'face 'eshell-prompt-face)
                (propertize " " 'face 'default)))))
 
-  (defun om/eshell-here () 
+  (defun om/eshell-here ()
     (interactive)
     (let* ((parent (if (buffer-file-name)
                        (file-name-directory (buffer-file-name))
@@ -511,25 +529,15 @@
       (insert (concat "ls"))
       (eshell-send-input)))
 
-  (defun om/delete-single-window (&optional window)
-    (interactive)
-    (save-current-buffer
-      (setq window (or window (selected-window)))
-      (select-window window)
-      (kill-buffer)
-      (if (one-window-p t)
-          (delete-frame)
-        (delete-window (selected-window)))))
-
   (defun eshell/x (&rest args)
-    (om/delete-single-window))
+    (kill-buffer-and-window))
   
   (defun eshell/clear ()
     "Clear the eshell buffer."
     (let ((inhibit-read-only t))
       (erase-buffer)
       (eshell-send-input)))
-  :init
+  :config
   ;; customize prompt
   (setq eshell-prompt-function 'om/eshell-prompt)
   (setq eshell-prompt-regexp "^.*[#$] ")
@@ -558,7 +566,7 @@
  '(fringe-mode (quote (4 . 4)) nil (fringe))
  '(package-selected-packages
    (quote
-    (mwim doom-modeline ttl-mode docker docker-compose-mode docker-tramp dockerfile-mode shrink-path org-bullets elfeed-org company-yasnippets company-yasnippet yasnippet-snippets dired-subtree smex iedit projectile counsel-notmuch notmuch ivy-rich git-gutter-fringe dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent))))
+    (pcomplete-extension flycheck esh-autosuggest dashboard mwim doom-modeline ttl-mode docker docker-compose-mode docker-tramp dockerfile-mode shrink-path org-bullets elfeed-org company-yasnippets company-yasnippet yasnippet-snippets dired-subtree smex iedit projectile counsel-notmuch notmuch ivy-rich git-gutter-fringe dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -576,7 +584,7 @@
 
 ;;; auto-indent after yank
 (defadvice insert-for-yank-1 (after indent-region activate)
-  "Indent yanked region in certain modes, C-u prefix to disable"
+  "Indent yanked region in certain modes, prefix to disable."
   (if (and (not current-prefix-arg)
            (member major-mode '(sh-mode
                                 emacs-lisp-mode lisp-mode
@@ -585,3 +593,6 @@
                                 xml-mode html-mode css-mode)))
       (indent-region (region-beginning) (region-end) nil)))
 
+(provide 'emacs)
+
+;;; emacs ends here
