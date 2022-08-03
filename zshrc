@@ -97,7 +97,7 @@ alias dirsize="du -skh *(/)"
 #
 # Define some global preferences
 #
-#export PATH=$PATH:/usr/local/bin
+export PATH=$PATH:/usr/local/bin:/opt/homebrew/bin
 export LSCOLORS='exgxfxdxcxegedabagexex'
 
 zstyle ':completion:*' list-colors 'di=34:ln=36:so=35:pi=33:ex=32:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=34:ow=34'

@@ -5,22 +5,20 @@
 ;;; Configure environment settings
 ;;; ---------------------------------------------------------------------------
 
-;;; Code:
-
+;;; Allow loading emacs lisp code from the emacs directory
 (add-to-list 'load-path "~/.emacs.d/lisp")
 
 
-;;;
 ;;; MacOS
-;;; 
+;;;
+;;; - Use command key as meta
 
 (when (eq window-system 'mac)
-  (set-default-font "Menlo")
+  ;(set-default-font "Menlo")
   (setq mac-command-modifier 'meta)
   (setq mac-option-modifier 'option)
   (setenv "LANG" "en_US.UTF-8"))
 
-;;; 
 ;;; Windows
 ;;;
 
@@ -48,7 +46,6 @@
 
 (delete-selection-mode 1)
 (column-number-mode 1)
-(global-hl-line-mode 1)
 
 
 (setq delete-old-versions t
@@ -63,8 +60,6 @@
 (global-set-key [escape] 'keyboard-escape-quit)
 (define-key isearch-mode-map [escape] 'isearch-cancel)
 
-(windmove-default-keybindings)
-
 
 ;;; ---------------------------------------------------------------------------
 ;;; Setup the packaging system
@@ -74,9 +69,6 @@
 ;;; subsequent package definitions make use of it.
 ;;; ---------------------------------------------------------------------------
 
-
-;;; Commentary:
-;; 
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
@@ -92,6 +84,9 @@
 
 ;;; ---------------------------------------------------------------------------
 ;;; Startup settings
+;;;
+;;; Disable any startup messages and keep the scratch buffer empty.
+;;; Setup a nice dashboard.
 ;;; ---------------------------------------------------------------------------
 
 (setq inhibit-startup-message t)
@@ -101,6 +96,7 @@
   :config
   (dashboard-setup-startup-hook))
 
+
 ;;; ---------------------------------------------------------------------------
 ;;; UI Setup
 ;;;
@@ -108,16 +104,20 @@
 ;;; Also includes the mode-line from Doom Emacs.
 ;;; ---------------------------------------------------------------------------
 
+(winner-mode 1)
+(windmove-default-keybindings)
+
 ;; disable blinking cursor
 (when (display-graphic-p)
   (blink-cursor-mode -1))
 
-(use-package pixel-scroll
-  :ensure nil
-  :config
-  (pixel-scroll-mode 1)
-  (setq fast-but-imprecise-scrolling t)
-  (setq pixel-resolution-fine-flag t))
+;;; built-in in Emacs 29
+;; (use-package pixel-scroll
+;;   :ensure nil
+;;   :config
+;;   (pixel-scroll-mode 1)
+;;   (setq fast-but-imprecise-scrolling t)
+;;   (setq pixel-resolution-fine-flag t))
 
 (setq echo-keystrokes 0.1)
 
@@ -149,17 +149,16 @@
   (doom-themes-visual-bell-config)
   (doom-themes-neotree-config)
   (doom-themes-org-config)
+  ;; FIXME: move current face customizations here and make them theme
+  ;; specific.  Should probably use something like
+  ;; (doom-themes-set-faces 'doom-one '(face :background "gray"))
   (load-theme 'doom-one 'no-confirm))
 
 ;; brighten buffers (that represent real files)
 (use-package solaire-mode
   :requires doom-themes
   :config
-  (solaire-mode-swap-bg)
-  (solaire-global-mode t)
-  :hook
-  ((change-major-mode after-revert ediff-prepare-buffer) . turn-on-solaire-mode)
-  (minibuffer-setup . solaire-mode-in-minibuffer))
+  (solaire-global-mode t))
 
 (use-package doom-modeline
   :hook (after-init . doom-modeline-mode))
@@ -203,6 +202,12 @@
   :diminish eldoc-mode
   :diminish auto-revert-mode)
 
+(use-package shackle
+  :ensure t
+  :config
+  (setq shackle-rules '(("\\`\\*WoMan .*\\*\\'" :regexp t :select t :popup t :align right :size 0.5)
+                        ("\\`\\*vterm.*\\*\\'" :regexp t :select t :popup t :align bottom :size 0.3)))
+  (shackle-mode 1))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Dired
@@ -211,7 +216,6 @@
 (use-package dired
   :ensure nil
   :init
-  (setq dired-dwim-target t)
   (setq dired-listing-switches "-alh"))
 
 ;;; Use dired-x for its omit-mode
@@ -219,6 +223,7 @@
   :ensure nil
   :init
   (setq-default dired-omit-files-p t)
+  (setq dired-omit-verbose nil)
   (setq dired-omit-files "^\\...+$")
   :bind
   (:map dired-mode-map
@@ -228,12 +233,12 @@
   :hook ((dired-mode . dired-collapse-mode)
          (dired-mode . (lambda () (toggle-truncate-lines 1)))))
 
-(use-package dired-k
-  :hook ((dired-initial-position . dired-k)
-         (dired-after-readin . dired-k-no-revert))
-  :init
-  (setq dired-k-style 'git)
-  (setq dired-k-human-readable t))
+;; (use-package dired-k
+;;   :hook ((dired-initial-position . dired-k)
+;;          (dired-after-readin . dired-k-no-revert))
+;;   :init
+;;   (setq dired-k-style 'git)
+;;   (setq dired-k-human-readable t))
 
 (use-package dired-subtree
   :bind
@@ -257,6 +262,21 @@
   (setq global-auto-revert-non-file-buffers t)
   (setq auto-revert-verbose nil))
 
+
+;;; ---------------------------------------------------------------------------
+;;; TRAMP
+;;; ---------------------------------------------------------------------------
+
+(use-package tramp
+  :ensure nil
+  :config
+  (add-to-list 'tramp-connection-properties '("/ssh:" "direct-async-process" t))
+  (setq tramp-allow-unsafe-temporary-files t)
+  (setq vc-ignore-dir-regexp
+        (format "\\(%s\\)\\|\\(%s\\)"
+                vc-ignore-dir-regexp
+                tramp-file-name-regexp)))
+
 ;;; ---------------------------------------------------------------------------
 ;;; Completion
 ;;; ---------------------------------------------------------------------------
@@ -268,6 +288,7 @@
   (require 'flx)
   (setq ivy-wrap t)
   (setq ivy-use-virtual-buffers nil)
+  (setq ivy-use-selectable-prompt t)
   (setq ivy-initial-inputs-alist nil)
   (setq ivy-height 15)
   (setq ivy-re-builders-alist '((t . ivy--regex-fuzzy)))
@@ -281,6 +302,8 @@
   (ivy-rich-mode 1)
   :init
   (setq ivy-format-function #'ivy-format-function-line)
+  (setq ivy-rich-parse-remote-buffer nil)
+  (setq ivy-rich-parse-remote-file-path nil)
   (setq ivy-virtual-abbreviate 'full))
 
 (use-package counsel
@@ -363,18 +386,10 @@
   (("C-c g" . magit-status)))
 
 
-;;; FIXME: clean up roswell init
-(setenv "PATH" (concat (getenv "PATH") ":/Users/entrox/.roswell/bin"))
-(setq exec-path (append exec-path '("/Users/entrox/.roswell/bin")))
-
-(let ((slime-helper (expand-file-name "~/.roswell/helper.el")))
-  (when (file-exists-p slime-helper)
-    (load slime-helper)))
-
 (use-package slime
   :config
   (setq slime-net-coding-system 'utf-8-unix)
-  (setq inferior-lisp-program "ros -Q run")
+  (setq inferior-lisp-program "sbcl")
   (setq slime-contribs '(slime-fancy slime-listener-hooks slime-indentation slime-company))
 
   ;; (define-common-lisp-style "omarkov"
@@ -405,25 +420,21 @@
 (use-package js2-mode
   :defer t)
 
-(use-package aggressive-indent
-  :diminish aggressive-indent-mode
-  :hook (prog-mode . aggressive-indent-mode))
+(use-package rjsx-mode
+  :ensure t)
+
+(use-package tide
+  :ensure t
+  :after (rjsx-mode company flycheck)
+  :hook ((rjsx-mode . tide-setup)
+         (rjsx-mode . tide-hl-identifier-mode)
+         (before-save . tide-format-before-save)))
 
 
 ;;; ---------------------------------------------------------------------------
 ;;; Applications
 ;;; ---------------------------------------------------------------------------
 
-;;; Elfeed
-
-(use-package elfeed)
-
-(use-package elfeed-org
-  :after elfeed
-  :init
-  (setq rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org"))
-  :config
-  (elfeed-org))
 
 
 ;;; ---------------------------------------------------------------------------
@@ -437,7 +448,7 @@
   :config
   ;; Files & Directories
   (setq org-directory (expand-file-name "~/org"))
-  (setq org-agenda-files '("~/org/inbox.org" "~/org/gtd.org" "~/org/tickler.org"))
+  ;(setq org-agenda-files '("~/org/inbox.org" "~/org/gtd.org" "~/org/tickler.org"))
   (setq org-default-notes-file "~/org/inbox.org")
 
   ;; UI
@@ -460,6 +471,7 @@
         '(("NEXT" :inherit font-lock-function-name-face :weight bold)
           ("WAITING" :inherit warning)))
 
+  (setq org-return-follows-link t)
   (setq org-special-ctrl-a/e t
         org-special-ctrl-k t)
   (setq org-yank-adjusted-subtrees t)
@@ -468,16 +480,26 @@
   
   ;; Capture
   (setq org-capture-templates
-        '(("t" "Todo [inbox]" entry
+        '(("t" "Create a new TODO entry in the inbox." entry
            (file+headline "~/org/inbox.org" "Tasks")
            "* TODO %i%?")
-          ("T" "Tickler" entry
+          ("T" "Create a new tickler entry." entry
            (file+headline "~/org/tickler.org" "Tickler")
-           "* %i%? \n %U"))))
+           "* %i%? \n %U")
+          ("n" "Create a new timestamped note." plain
+           (file (lambda () (concat "~/pkm/Notes/" (format-time-string "%F-%H%M.org"))))
+           "#+TITLE: %?"))))
 
-(use-package org-brain
-  :bind
-  (("C-c v" . org-brain-visualize)))
+
+;;; ---------------------------------------------------------------------------
+;;; vterm
+;;; ---------------------------------------------------------------------------
+
+(use-package vterm
+  :ensure t
+  :config
+  (setq vterm-kill-buffer-on-exit t)
+  (add-to-list 'vterm-eval-cmds '("woman-find-file" woman-find-file)))
 
 
 ;;; ---------------------------------------------------------------------------
@@ -511,7 +533,7 @@
                (propertize (cdr path) 'face 'font-lock-comment-face)
                (propertize (om/current-git-branch)
                            'face 'font-lock-function-name-face)
-               (propertize (if (= (user-uid) 0) "#" "$") 'face 'eshell-prompt-face)
+               (propertize (if (= (user-uid) 0) "#" "$") 'face 'default)
                (propertize " " 'face 'default)))))
 
   (defun om/eshell-here ()
@@ -560,20 +582,24 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(company-box-icons-alist (quote company-box-icons-all-the-icons))
  '(custom-safe-themes
    (quote
-    ("aa0a998c0aa672156f19a1e1a3fb212cdc10338fb50063332a0df1646eb5dfea" "4597d1e9bbf1db2c11d7cf9a70204fa42ffc603a2ba5d80c504ca07b3e903770" default)))
+    ("2d1fe7c9007a5b76cea4395b0fc664d0c1cfd34bb4f1860300347cdad67fb2f9" "728eda145ad16686d4bbb8e50d540563573592013b10c3e2defc493f390f7d83" "aa0a998c0aa672156f19a1e1a3fb212cdc10338fb50063332a0df1646eb5dfea" "4597d1e9bbf1db2c11d7cf9a70204fa42ffc603a2ba5d80c504ca07b3e903770" default)))
+ '(doom-modeline-mode t)
+ '(doom-one-padded-modeline t)
  '(fringe-mode (quote (4 . 4)) nil (fringe))
  '(package-selected-packages
    (quote
-    (pcomplete-extension flycheck esh-autosuggest dashboard mwim doom-modeline ttl-mode docker docker-compose-mode docker-tramp dockerfile-mode shrink-path org-bullets elfeed-org company-yasnippets company-yasnippet yasnippet-snippets dired-subtree smex iedit projectile counsel-notmuch notmuch ivy-rich git-gutter-fringe dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent))))
+    (rjsx-mode tide ivy-posframe better-defaults request deadgrep deft company-box company-posframe go-mode php-mode discover pcomplete-extension flycheck esh-autosuggest dashboard mwim doom-modeline ttl-mode docker docker-compose-mode docker-tramp dockerfile-mode shrink-path org-bullets elfeed-org company-yasnippets company-yasnippet yasnippet-snippets dired-subtree smex iedit projectile counsel-notmuch notmuch ivy-rich git-gutter-fringe dired-collapse-mode dired-k flx all-the-icons-ivy ivy-hydra counsel ivy dired-collapse spaceline-all-the-icons kubernetes terraform-mode markdown-mode helm-org-rifle org-brain nlinum-hl solaire-mode elpy eldoc-eval nlinum doom-themes elfeed beacon helm-ag helm-dash helm-mode-manager glsl-mode ace-jump-zap ace-window avy ace-jump-mode dash-at-point move-text groovy-mode gradle-mode yaml-mode helm-descbinds dired+ page-break-lines fill-column-indicator helm-company neotree company-web company-restclient ob-restclient restclient anzu js2-mode json-mode web-mode use-package spaceline zenburn-theme yasnippet window-numbering which-key undo-tree slime-company popup paredit multiple-cursors magit helm-projectile expand-region aggressive-indent))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#21242b" :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
+ '(default ((t (:inherit nil :stipple nil :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
+ ;; '(default ((t (:inherit nil :stipple nil :background "#21242b" :foreground "#bbc2cf" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "nil" :family "Menlo"))))
  '(dired-directory ((t (:foreground "#51afef"))))
  '(eshell-prompt ((t (:inherit default :foreground "#bbc2cf" :weight normal))))
  '(web-mode-html-tag-bracket-face ((t (:foreground "gray")))))
