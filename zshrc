@@ -39,13 +39,12 @@ zstyle ':completion:*' list-colors 'di=34:ln=36:so=35:pi=33:ex=32:bd=34;46:cd=34
 setopt prompt_subst
 PS1='[%{${fg[green]}%}%n@%m%{${fg[default]}%}]:$(shrink_path -f)$ '
 
-
-
-# -----------------------------------------------------------------------------
-# iTerm integration
-# -----------------------------------------------------------------------------
-
-test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+# enable direnv if available
+if command -v direnv &> /dev/null; then
+    eval "$(direnv hook zsh)"
+    # Remove _direnv_hook from chpwd_functions to prevent double execution
+    chpwd_functions=(${chpwd_functions[@]:#_direnv_hook})
+fi
 
 
 # -----------------------------------------------------------------------------

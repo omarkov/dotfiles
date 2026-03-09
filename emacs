@@ -212,7 +212,8 @@
   :ensure t
   :config
   (setq shackle-rules '(("\\`\\*WoMan .*\\*\\'" :regexp t :select t :popup t :align right :size 0.5)
-                        ("\\`\\*vterm.*\\*\\'" :regexp t :select t :popup t :align bottom :size 0.3)))
+                        ("\\`\\*vterm.*\\*\\'" :regexp t :select t :popup t :align bottom :size 0.33)
+                        ("\\`\\*claude.*\\*\\'" :regexp t :select t :popup t :align right :size 0.5)))
   (shackle-mode 1))
 
 ;;; ---------------------------------------------------------------------------
@@ -268,7 +269,18 @@
   (setq global-auto-revert-non-file-buffers t)
   (setq auto-revert-verbose nil))
 
+;;; ---------------------------------------------------------------------------
+;;; Browse URL
+;;; ---------------------------------------------------------------------------
 
+(use-package browse-url
+  :config
+  (setq browse-url-handlers
+        ;; open PDF links in external viewer (Preview.app)
+        '(("\\.pdf\\'" . (lambda (url &rest _args)
+                           (let ((file (url-unhex-string
+                                        (string-remove-prefix "file://" url))))
+                             (start-process "open-pdf" nil "open" "-a" "Preview" file)))))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; TRAMP
@@ -497,19 +509,26 @@
 ;;; LLM
 ;;; ---------------------------------------------------------------------------
 
-(use-package gptel
-  :config
-  (setq gptel-model "claude-3-5-sonnet-20241022")
-  (setq gptel-backend (gptel-make-anthropic "Claude"
-                        :stream t)))
+;;; Agent Shell
 
-(use-package elysium)
-
-(use-package claude-code-ide
-  :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
-  :bind ("C-c C-c" . claude-code-ide-menu)
+(use-package agent-shell
+  :ensure t
+  :ensure-system-package
+  ((claude . "brew install claude-code")
+   (claude-agent-acp . "npm install -g @zed-industries/claude-agent-acp"))
   :config
-  (claude-code-ide-emacs-tools-setup)) ; Optionally enable Emacs MCP tools
+  (setq agent-shell-preferred-agent-config (agent-shell-anthropic-make-claude-code-config)))
+
+;;; direnv handling
+
+(use-package inheritenv
+  :vc (:url "https://github.com/purcell/inheritenv" :rev :newest))
+
+(use-package envrc
+  :ensure t
+  :config
+  (envrc-global-mode))
+
 
 ;;; ---------------------------------------------------------------------------
 ;;; org-mode
@@ -543,7 +562,11 @@
   (setq org-yank-adjusted-subtrees t)
 
   ;; Babel
-  (setq org-confirm-babel-evaluate nil))
+  (setq org-confirm-babel-evaluate nil)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((python . t)
+     (shell . t))))
 
 
 ;;; ---------------------------------------------------------------------------
@@ -554,6 +577,7 @@
   :ensure t
   :config
   (setq vterm-kill-buffer-on-exit t)
+  (setq vterm-max-scrollback 10000)
   (add-to-list 'vterm-eval-cmds '("woman-find-file" woman-find-file)))
 
 
@@ -626,6 +650,16 @@
   (setq eshell-destroy-buffer-when-process-dies t)
   :bind
   (("C-c e" . om/eshell-here)))
+
+;;; ---------------------------------------------------------------------------
+;;; Markdown Mode
+;;; ---------------------------------------------------------------------------
+
+(use-package markdown-mode
+  :ensure t
+  :mode ("\\.md\\'" . gfm-mode)
+  :custom
+  (markdown-command "pandoc -f gfm -t html5"))
 
 
 ;;; ---------------------------------------------------------------------------
